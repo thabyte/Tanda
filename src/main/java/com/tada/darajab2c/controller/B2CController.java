@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/b2c")
 public class B2CController {
 
-
     private final B2CService b2cService;
 
     public B2CController(B2CService b2cService) {
@@ -20,8 +19,12 @@ public class B2CController {
     }
 
     @PostMapping("/request")
-    public Payload handleB2CRequest(@RequestBody UserRequest request) {
-        return b2cService.processB2CRequest(request);
+    public ResponseEntity<Payload> handleB2CRequest(@RequestBody UserRequest request) {
+        Payload payload = b2cService.processB2CRequest(request);
+        if ("Failed".equals(payload.getStatus())) {
+            return ResponseEntity.badRequest().body(payload);
+        }
+        return ResponseEntity.ok(payload);
     }
 
     @GetMapping("/status/{transactionId}")

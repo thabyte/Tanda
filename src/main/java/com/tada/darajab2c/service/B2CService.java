@@ -2,9 +2,11 @@ package com.tada.darajab2c.service;
 
 import com.tada.darajab2c.dto.*;
 import com.tada.darajab2c.entity.PaymentStatus;
+import com.tada.darajab2c.exception.BadRequestException;
 import com.tada.darajab2c.repository.B2CRequestRepository;
 import com.tada.darajab2c.repository.PaymentStatusRepository;
 import com.tada.darajab2c.util.OAuthTokenGenerator;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -16,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class B2CService {
 
     private final B2CRequestRepository b2cRequestRepository;
@@ -27,8 +30,8 @@ public class B2CService {
     @Value("${spring.kafka.topic.b2c-requests}")
     private String b2cRequestsTopic;
 
-    @Value("${spring.kafka.topic.payment-status}")
-    private String paymentStatusTopic;
+//    @Value("${spring.kafka.topic.payment-status}")
+//    private String paymentStatusTopic;
 
     public B2CService(B2CRequestRepository b2cRequestRepository, RestTemplate restTemplate, PaymentStatusRepository paymentStatusRepository, KafkaTemplate<String, B2CRequest> kafkaTemplate, OAuthTokenGenerator oAuthTokenGenerator) {
         this.b2cRequestRepository = b2cRequestRepository;
@@ -39,7 +42,13 @@ public class B2CService {
     }
 
     public Payload processB2CRequest(UserRequest request) {
-//        validateUserRequest(request);
+        try {
+            validateUserRequest(request);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new BadRequestException(e.getMessage(), e);
+        }
+
 
         B2CRequest b2cRequest = B2CRequest.builder()
                 .originatorConversationID(request.getId())
@@ -54,6 +63,8 @@ public class B2CService {
                 .resultURL("https://mydomain.com/b2c/result")
                 .occasion("Null")
                 .build();
+
+
 
         String url = "https://sandbox.safaricom.co.ke/mpesa/b2c/v1/paymentrequest";
 
@@ -86,6 +97,7 @@ public class B2CService {
             return payload;
         } catch (Exception e) {
             logFailedRequest(b2cRequest, e);
+
 
             Payload payload = new Payload();
             payload.setId(UUID.randomUUID());

@@ -22,7 +22,7 @@ public class B2CRequestEntity {
     private String commandID;
 
     @JsonProperty("Amount")
-    private int amount;
+    private float amount;
 
     @JsonProperty("PartyA")
     private int partyA;
