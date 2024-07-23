@@ -3,7 +3,7 @@ package com.tada.darajab2c.controller;
 import com.tada.darajab2c.dto.Payload;
 import com.tada.darajab2c.dto.PaymentStatusUpdate;
 import com.tada.darajab2c.dto.UserRequest;
-import com.tada.darajab2c.entity.PaymentStatus;
+import com.tada.darajab2c.entity.PaymentStatusEntity;
 import com.tada.darajab2c.service.B2CService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,9 +28,9 @@ public class B2CController {
     }
 
     @GetMapping("/status/{transactionId}")
-    public ResponseEntity<PaymentStatus> getPaymentStatus(@PathVariable String transactionId) {
-        PaymentStatus paymentStatus = b2cService.fetchPaymentStatus(transactionId);
-        return ResponseEntity.ok(paymentStatus);
+    public ResponseEntity<PaymentStatusEntity> getPaymentStatus(@PathVariable String transactionId) {
+        PaymentStatusEntity paymentStatusEntity = b2cService.fetchPaymentStatus(transactionId);
+        return ResponseEntity.ok(paymentStatusEntity);
     }
 
     @PutMapping("/update")

@@ -1,7 +1,7 @@
 package com.tada.darajab2c.service;
 
 import com.tada.darajab2c.dto.*;
-import com.tada.darajab2c.entity.PaymentStatus;
+import com.tada.darajab2c.entity.PaymentStatusEntity;
 import com.tada.darajab2c.exception.BadRequestException;
 import com.tada.darajab2c.repository.B2CRequestRepository;
 import com.tada.darajab2c.repository.PaymentStatusRepository;
@@ -65,7 +65,6 @@ public class B2CService {
                 .build();
 
 
-
         String url = "https://sandbox.safaricom.co.ke/mpesa/b2c/v1/paymentrequest";
 
         HttpHeaders headers = new HttpHeaders();
@@ -87,7 +86,14 @@ public class B2CService {
 
             b2cRequestRepository.save(b2cRequest);
 
-            logPaymentRequest(b2cRequest, response);
+            try{
+                logPaymentRequest(b2cRequest, response);
+                System.out.println("Priniting success");
+            }catch (Exception e){
+                e.printStackTrace();
+                System.out.println("Priniting error");
+                System.out.println(e.getMessage());
+            }
 
             Payload payload = new Payload();
             payload.setId(UUID.randomUUID());
@@ -126,38 +132,49 @@ public class B2CService {
     }
 
     private void logPaymentRequest(B2CRequest b2cRequest, B2CResponse response) {
-        PaymentStatus paymentStatus = new PaymentStatus();
-        paymentStatus.setTransactionId(b2cRequest.getOriginatorConversationID());
-        paymentStatus.setStatus("Pending");
-        paymentStatus.setDetails(b2cRequest.toString() + " Response: " + (response != null ? response.toString() : "No response"));
-        paymentStatus.setCreatedDate(LocalDateTime.now());
-        paymentStatusRepository.save(paymentStatus);
+        PaymentStatusEntity paymentStatus = PaymentStatusEntity.builder()
+                .transactionId(b2cRequest.getOriginatorConversationID())
+                .status("Pending")
+                .details(b2cRequest + " Response: " + (response != null ? response.toString() : "No response"))
+                .createdDate(LocalDateTime.now())
+                .build();
+
+        try {
+            paymentStatusRepository.save(paymentStatus);
+            System.out.println("succeeded");
+            System.out.println(paymentStatusRepository.save(paymentStatus).getId());
+        }catch (Exception e){
+            System.out.println("Failed");
+            System.out.println(e.getMessage());
+        }
 
         kafkaTemplate.send(b2cRequestsTopic, b2cRequest);
     }
 
     private void logFailedRequest(B2CRequest b2cRequest, Exception e) {
-        PaymentStatus paymentStatus = new PaymentStatus();
-        paymentStatus.setTransactionId(b2cRequest.getOriginatorConversationID());
-        paymentStatus.setStatus("Failed");
-        paymentStatus.setDetails("Request: " + b2cRequest.toString() + " Error: " + e.getMessage());
-        paymentStatus.setCreatedDate(LocalDateTime.now());
-        paymentStatusRepository.save(paymentStatus);
+        PaymentStatusEntity paymentStatusEntity = PaymentStatusEntity.builder()
+                .transactionId(b2cRequest.getOriginatorConversationID())
+                .status(b2cRequest.getStatus())
+                .details("Request: " + b2cRequest + " Error: " + e.getMessage())
+                .createdDate(LocalDateTime.now())
+                .build();
+
+        paymentStatusRepository.save(paymentStatusEntity);
 
         kafkaTemplate.send(b2cRequestsTopic, b2cRequest);
     }
 
-    public PaymentStatus fetchPaymentStatus(String transactionId) {
+    public PaymentStatusEntity fetchPaymentStatus(String transactionId) {
         return paymentStatusRepository.findById(transactionId).orElse(null);
     }
 
     public void updatePaymentStatus(PaymentStatusUpdate statusUpdate) {
-        PaymentStatus paymentStatus = paymentStatusRepository.findById(statusUpdate.getTransactionID()).orElse(null);
-        if (paymentStatus != null) {
-            paymentStatus.setStatus(statusUpdate.getStatus());
-            paymentStatus.setDetails(statusUpdate.getDetails());
-            paymentStatus.setUpdatedDate(LocalDateTime.now());
-            paymentStatusRepository.save(paymentStatus);
+        PaymentStatusEntity paymentStatusEntity = paymentStatusRepository.findById(statusUpdate.getTransactionID()).orElse(null);
+        if (paymentStatusEntity != null) {
+            paymentStatusEntity.setStatus(statusUpdate.getStatus());
+            paymentStatusEntity.setDetails(statusUpdate.getDetails());
+            paymentStatusEntity.setUpdatedDate(LocalDateTime.now());
+            paymentStatusRepository.save(paymentStatusEntity);
         }
     }
 

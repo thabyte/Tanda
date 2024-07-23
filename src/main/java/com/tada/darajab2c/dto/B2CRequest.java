@@ -3,15 +3,16 @@ package com.tada.darajab2c.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.kafka.common.protocol.types.Field;
 
 import java.util.UUID;
 
+@Builder
 @Getter
 @Setter
-@Builder
 public class B2CRequest {
     @JsonProperty("OriginatorConversationID")
     private UUID originatorConversationID;
