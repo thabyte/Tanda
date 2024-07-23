@@ -55,7 +55,7 @@ To run all tests using Gradle:
 {
   "id": "UUID",
   "status": "Success",
-  "ref": "Unknown"
+  "ref": "UUID"
 }
 
 ```
